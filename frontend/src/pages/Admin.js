@@ -69,10 +69,18 @@ export default function Admin() {
       <style>{`
         @media (max-width: 900px) {
           .admin-root { flex-direction: column !important; }
-          .admin-sidebar { width: 100% !important; flex-direction: row !important; overflow-x: auto !important; padding: 10px 12px !important; }
-          .admin-nav-item { white-space: nowrap; }
+          .admin-sidebar { width: 100% !important; flex-direction: row !important; overflow-x: auto !important; padding: 10px 12px !important; align-items: center; }
+          .admin-sidebar-brand { display: none !important; }
+          .admin-sidebar nav { flex-direction: row !important; gap: 4px !important; }
+          .admin-nav-item { white-space: nowrap; width: auto !important; }
           .admin-main { padding: 18px 14px !important; }
           .admin-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .admin-toolbar { flex-direction: column !important; align-items: stretch !important; }
+          .admin-user-row { flex-wrap: wrap !important; row-gap: 8px !important; }
+          .admin-user-row .admin-user-info { flex-basis: 100% !important; order: -1; }
+        }
+        @media (max-width: 480px) {
+          .admin-kpi-grid { grid-template-columns: 1fr !important; }
         }
         .admin-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 600; color: #64748b; border: none; background: none; width: 100%; text-align: left; transition: all .18s; }
         .admin-nav-item:hover { background: #f1f5f9; color: #1B3A6B; }
@@ -80,7 +88,7 @@ export default function Admin() {
       `}</style>
 
       <aside style={s.sidebar} className="admin-sidebar">
-        <div style={s.brand}>
+        <div style={s.brand} className="admin-sidebar-brand">
           <ShieldCheck size={20} color="#CE1126" />
           <div>
             <div style={s.brandTitle}>Administration</div>
@@ -203,7 +211,7 @@ function UsersPanel({ onToast }) {
     <div>
       <PageHeader title="Utilisateurs" sub={`${users.length} compte${users.length > 1 ? 's' : ''} affiché${users.length > 1 ? 's' : ''}`} />
 
-      <div style={s.toolbar}>
+      <div style={s.toolbar} className="admin-toolbar">
         <div style={s.searchBox}>
           <Search size={14} color="#94a3b8" />
           <input
@@ -235,11 +243,11 @@ function UsersPanel({ onToast }) {
             const Icon = meta.icon;
             const isMe = u.id === me.id;
             return (
-              <div key={u.id} style={{ ...s.userRow, opacity: u.is_active ? 1 : 0.55 }}>
+              <div key={u.id} style={{ ...s.userRow, opacity: u.is_active ? 1 : 0.55 }} className="admin-user-row">
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: meta.color + '14', color: meta.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon size={16} />
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0 }} className="admin-user-info">
                   <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1e293b' }}>{u.full_name}{isMe && <span style={{ color: '#94a3b8', fontWeight: 500 }}> (toi)</span>}</div>
                   <div style={{ fontSize: 12, color: '#64748b' }}>{u.email}{u.organization ? ` · ${u.organization}` : ''}{u.region ? ` · ${u.region}` : ''}</div>
                 </div>
