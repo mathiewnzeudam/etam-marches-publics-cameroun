@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 from app.core.deps import get_db, get_current_user, get_optional_user
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.config import settings
+from app.core.rate_limit import rate_limit
 from app.models.models import AuditLog
 from app.services.services import (
     UserService, ConversationService, TenderService,
@@ -50,7 +51,8 @@ auth = APIRouter(prefix="/auth", tags=["Authentification"])
 
 
 @auth.post("/register", response_model=TokenResponse, status_code=201,
-           summary="Créer un compte")
+           summary="Créer un compte",
+           dependencies=[Depends(rate_limit("register", max_requests=5, window_seconds=3600))])
 async def register(req: RegisterRequest, request: Request, db: AsyncSession = Depends(get_db)):
     svc = UserService(db)
     if await svc.get_by_email(req.email):
@@ -66,7 +68,8 @@ async def register(req: RegisterRequest, request: Request, db: AsyncSession = De
     )
 
 
-@auth.post("/login", response_model=TokenResponse, summary="Se connecter")
+@auth.post("/login", response_model=TokenResponse, summary="Se connecter",
+           dependencies=[Depends(rate_limit("login", max_requests=10, window_seconds=300))])
 async def login(req: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
     svc = UserService(db)
     user = await svc.get_by_email(req.email)
@@ -109,7 +112,8 @@ async def change_password(data: PasswordChange, current_user=Depends(get_current
 chat_r = APIRouter(prefix="/chat", tags=["Assistant IA"])
 
 
-@chat_r.post("", response_model=ChatResponse, summary="Poser une question")
+@chat_r.post("", response_model=ChatResponse, summary="Poser une question",
+             dependencies=[Depends(rate_limit("chat", max_requests=20, window_seconds=60))])
 async def ask(req: ChatRequest, current_user=Depends(get_current_user),
               db: AsyncSession = Depends(get_db)):
     conv_svc = ConversationService(db)
@@ -138,7 +142,8 @@ async def ask(req: ChatRequest, current_user=Depends(get_current_user),
     )
 
 
-@chat_r.post("/stream", summary="Réponse en streaming (SSE)")
+@chat_r.post("/stream", summary="Réponse en streaming (SSE)",
+             dependencies=[Depends(rate_limit("chat", max_requests=20, window_seconds=60))])
 async def ask_stream(req: ChatRequest, current_user=Depends(get_current_user),
                      db: AsyncSession = Depends(get_db)):
     conv_svc = ConversationService(db)
