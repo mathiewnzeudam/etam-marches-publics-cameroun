@@ -45,3 +45,19 @@ async def get_optional_user(
         return None
     from app.services.services import UserService
     return await UserService(db).get_by_id(user_id)
+
+
+def require_role(*allowed_roles: str):
+    """Dépendance FastAPI : restreint un endpoint aux utilisateurs ayant l'un des rôles donnés.
+
+    S'appuie sur get_current_user (déjà authentifié) — à utiliser en plus, pas à la place.
+    """
+    async def _dependency(current_user=Depends(get_current_user)):
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Accès réservé à un rôle non autorisé pour ce compte",
+            )
+        return current_user
+
+    return _dependency

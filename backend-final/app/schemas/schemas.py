@@ -2,9 +2,14 @@
 Schémas Pydantic — validation des entrées/sorties de l'API.
 """
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, Literal
 from datetime import date, datetime
 import uuid
+
+# Rôles auto-attribuables à l'inscription. "admin" en est volontairement exclu —
+# il ne peut être accordé que manuellement (base de données / outil d'administration),
+# jamais via l'API publique.
+SELF_SERVICE_ROLES = ("citizen", "enterprise", "authority")
 
 
 # ── AUTH ──────────────────────────────────────────────────────────────────────
@@ -14,7 +19,7 @@ class RegisterRequest(BaseModel):
     full_name    : str  = Field(..., min_length=2, max_length=100)
     password     : str  = Field(..., min_length=8)
     phone        : Optional[str] = None
-    role         : str  = "citizen"
+    role         : Literal["citizen", "enterprise", "authority"] = "citizen"
     organization : Optional[str] = None
     region       : Optional[str] = None
     sectors      : list[str] = []
@@ -266,6 +271,12 @@ class ReclamationCreate(BaseModel):
     plaignant_region : Optional[str] = None
     is_anonyme       : bool = False
     preuves          : list[dict] = []
+
+
+class ReclamationAdminUpdate(BaseModel):
+    """Traitement d'une réclamation — réservé aux administrateurs (voir require_role("admin"))."""
+    statut    : Optional[Literal["soumise", "en_instruction", "resolue", "rejetee", "classee"]] = None
+    decision  : Optional[str] = None
 
 
 class ReclamationOut(BaseModel):

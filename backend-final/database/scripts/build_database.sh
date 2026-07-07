@@ -110,6 +110,12 @@ echo -e "${YELLOW}[+] Ajout des contraintes métier...${NC}"
 docker exec -i $CONTAINER psql -U $DB_USER -d $DB_NAME < database/migrations/004_constraints.sql
 echo -e "${GREEN}✓ Contraintes CHECK ajoutées${NC}"
 
+# ── Migration 005 — Réclamations ──────────────────────────────
+echo ""
+echo -e "${YELLOW}[+] Création de la table réclamations...${NC}"
+docker exec -i $CONTAINER psql -U $DB_USER -d $DB_NAME < database/migrations/005_reclamations.sql
+echo -e "${GREEN}✓ Table réclamations créée${NC}"
+
 # ── Rapport final ─────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${GREEN}═══════════════════════════════════════════════${NC}"

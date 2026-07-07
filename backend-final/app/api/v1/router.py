@@ -3,6 +3,7 @@ Router principal — regroupe tous les endpoints de l'API v1.
 """
 from __future__ import annotations
 import logging
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks, Query
 from fastapi.responses import StreamingResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +13,7 @@ from urllib.parse import quote, urlparse as _urlparse
 
 log = logging.getLogger(__name__)
 
-from app.core.deps import get_db, get_current_user, get_optional_user
+from app.core.deps import get_db, get_current_user, get_optional_user, require_role
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.config import settings
 from app.core.rate_limit import rate_limit
@@ -29,7 +30,7 @@ from app.schemas.schemas import (
     AlertCreate, AlertUpdate, AlertOut, NotificationOut,
     DocumentGenerateRequest, DocumentUpdate, DocumentOut, DocumentListOut, DOCUMENT_TYPES,
     DashboardFull, DashboardStats,
-    ReclamationCreate, ReclamationOut, RECLAMATION_TYPES,
+    ReclamationCreate, ReclamationOut, ReclamationAdminUpdate, RECLAMATION_TYPES, RECLAMATION_STATUTS,
 )
 
 api = APIRouter()
@@ -633,7 +634,47 @@ async def get_reclamation(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    recl = await ReclamationService(db).get_by_id(recl_id, str(current_user.id))
+    svc = ReclamationService(db)
+    # Un administrateur peut consulter n'importe quelle réclamation ; un utilisateur
+    # standard uniquement les siennes (protection IDOR via le filtre user_id).
+    owner_filter = None if current_user.role == "admin" else str(current_user.id)
+    recl = await svc.get_by_id(recl_id, owner_filter)
+    if not recl:
+        raise HTTPException(404, "Réclamation introuvable")
+    return ReclamationOut.model_validate(recl)
+
+
+@recl_r.get("/admin/toutes", response_model=list[ReclamationOut],
+            summary="Lister toutes les réclamations (admin)",
+            dependencies=[Depends(require_role("admin"))])
+async def admin_list_reclamations(
+    statut: Optional[str] = Query(None),
+    type_: Optional[str] = Query(None, alias="type"),
+    limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+):
+    if statut and statut not in RECLAMATION_STATUTS:
+        raise HTTPException(422, f"Statut invalide. Valeurs : {', '.join(RECLAMATION_STATUTS)}")
+    if type_ and type_ not in RECLAMATION_TYPES:
+        raise HTTPException(422, f"Type invalide. Valeurs : {', '.join(RECLAMATION_TYPES)}")
+    return await ReclamationService(db).list_all(statut, type_, limit, offset)
+
+
+@recl_r.patch("/{recl_id}", response_model=ReclamationOut,
+              summary="Traiter une réclamation (admin)",
+              dependencies=[Depends(require_role("admin"))])
+async def admin_update_reclamation(
+    recl_id: uuid.UUID, req: ReclamationAdminUpdate,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    data = req.model_dump(exclude_none=True)
+    if not data:
+        raise HTTPException(422, "Aucune donnée à mettre à jour")
+    if "statut" in data and data["statut"] in ("resolue", "rejetee", "classee"):
+        from datetime import datetime as _dt
+        data["traite_at"] = _dt.utcnow()
+    recl = await ReclamationService(db).update(recl_id, data, actor_role=current_user.role)
     if not recl:
         raise HTTPException(404, "Réclamation introuvable")
     return ReclamationOut.model_validate(recl)
