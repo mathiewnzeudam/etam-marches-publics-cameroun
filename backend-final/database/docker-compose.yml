@@ -1,0 +1,74 @@
+
+# ============================================================
+#  Marché-IA Cameroun — Infrastructure base de données
+#  Usage : docker compose up -d
+# ============================================================
+
+services:
+
+  # ── PostgreSQL 16 ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: marche_ia_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       marche_ia_db
+      POSTGRES_USER:     marche_ia
+      POSTGRES_PASSWORD: secret
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=fr_FR.UTF-8"
+      TZ: Africa/Douala
+    ports:
+      - "5432:5432"
+    volumes:
+      # Données persistantes
+      - marche_ia_pg_data:/var/lib/postgresql/data
+      # Migrations exécutées automatiquement au premier démarrage
+      - ./migrations/000_extensions.sql:/docker-entrypoint-initdb.d/000_extensions.sql:ro
+      - ./migrations/001_tables.sql:/docker-entrypoint-initdb.d/001_tables.sql:ro
+      - ./migrations/002_indexes.sql:/docker-entrypoint-initdb.d/002_indexes.sql:ro
+      - ./migrations/003_triggers_views.sql:/docker-entrypoint-initdb.d/003_triggers_views.sql:ro
+      - ./migrations/004_constraints.sql:/docker-entrypoint-initdb.d/004_constraints.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marche_ia -d marche_ia_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ── Adminer — Interface graphique web ─────────────────────
+  adminer:
+    image: adminer:latest
+    container_name: marche_ia_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── pgAdmin 4 — Interface avancée ─────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: marche_ia_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    admin@marche-ia.cm
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - admin   # Optionnel : docker compose --profile admin up -d
+
+volumes:
+  marche_ia_pg_data:
+    name: marche_ia_pg_data
+
+networks:
+  default:
+    name: marche_ia_network

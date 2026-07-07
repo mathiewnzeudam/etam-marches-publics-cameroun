@@ -1,0 +1,120 @@
+version: "3.9"
+
+# ============================================================
+#  Marché-IA Cameroun — Infrastructure complète
+#  Usage : docker compose up -d
+# ============================================================
+
+services:
+
+  # ── API FastAPI ───────────────────────────────────────────
+  api:
+    build: .
+    container_name: marche_ia_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://marche_ia:secret@postgres:5432/marche_ia_db
+      REDIS_URL: redis://redis:6379/0
+      QDRANT_URL: http://qdrant:6333
+      HF_HUB_DISABLE_XET: "1"
+      LLM_PROVIDER: groq
+      LLM_MODEL: llama-3.3-70b-versatile
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+      qdrant:   { condition: service_started }
+    volumes:
+      - ./knowledge_base:/app/knowledge_base:ro
+      - marche_ia_hf_cache:/root/.cache/huggingface
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Worker Celery ─────────────────────────────────────────
+  worker:
+    build: .
+    container_name: marche_ia_worker
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://marche_ia:secret@postgres:5432/marche_ia_db
+      REDIS_URL: redis://redis:6379/0
+      QDRANT_URL: http://qdrant:6333
+      HF_HUB_DISABLE_XET: "1"
+      LLM_PROVIDER: groq
+      LLM_MODEL: llama-3.3-70b-versatile
+    depends_on:
+      - api
+      - redis
+    command: celery -A app.workers.sync_worker worker --beat --loglevel=info -c 2
+
+  # ── PostgreSQL ────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: marche_ia_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: marche_ia_db
+      POSTGRES_USER: marche_ia
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - marche_ia_pg_data:/var/lib/postgresql/data
+      - ./database/migrations/000_extensions.sql:/docker-entrypoint-initdb.d/000_extensions.sql:ro
+      - ./database/migrations/001_tables.sql:/docker-entrypoint-initdb.d/001_tables.sql:ro
+      - ./database/migrations/002_indexes.sql:/docker-entrypoint-initdb.d/002_indexes.sql:ro
+      - ./database/migrations/003_triggers_views.sql:/docker-entrypoint-initdb.d/003_triggers_views.sql:ro
+      - ./database/migrations/004_constraints.sql:/docker-entrypoint-initdb.d/004_constraints.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marche_ia -d marche_ia_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Redis ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: marche_ia_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - marche_ia_redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Qdrant ────────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:v1.10.1
+    container_name: marche_ia_qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - marche_ia_qdrant_data:/qdrant/storage
+
+  # ── Adminer (UI base de données) ─────────────────────────
+  adminer:
+    image: adminer:latest
+    container_name: marche_ia_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+volumes:
+  marche_ia_pg_data:
+  marche_ia_redis_data:
+  marche_ia_qdrant_data:
+  marche_ia_hf_cache:
+
+networks:
+  default:
+    name: marche_ia_network

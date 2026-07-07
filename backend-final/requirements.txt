@@ -1,0 +1,58 @@
+# ============================================================
+#  Marché-IA Cameroun — Dépendances Python
+# ============================================================
+
+# Framework API
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+
+# IA — Groq (gratuit) / Claude API (production) / Gemini (test)
+groq>=0.9.0
+anthropic==0.28.0
+google-generativeai>=0.7.0
+
+# RAG Pipeline
+langchain==0.2.6
+langchain-anthropic==0.1.19
+qdrant-client==1.10.1
+sentence-transformers==3.0.1
+
+# Base de données
+asyncpg==0.29.0
+sqlalchemy[asyncio]==2.0.31
+alembic==1.13.2
+
+# Cache
+redis[asyncio]==5.0.7
+
+# Authentification
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# HTTP / Scraping ARMP
+httpx==0.27.0
+beautifulsoup4==4.12.3
+feedparser==6.0.11
+
+# Validation / Configuration
+pydantic==2.7.4
+pydantic-settings==2.3.4
+python-dotenv==1.0.1
+
+# Génération documents
+pypdf==4.2.0
+python-docx==1.1.2
+
+# Tâches asynchrones (Celery)
+celery==5.4.0
+
+# Monitoring
+langfuse==2.32.0
+sentry-sdk[fastapi]==2.7.1
+
+# Tests
+pytest==8.2.2
+pytest-asyncio==0.23.7
+pytest-mock==3.14.0
+httpx==0.27.0

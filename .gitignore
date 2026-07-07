@@ -1,0 +1,38 @@
+# Frontend
+frontend/node_modules
+frontend/build
+frontend/.pnp
+frontend/.pnp.js
+frontend/coverage
+
+# Backend
+backend-final/.venv
+backend-final/venv
+backend-final/__pycache__
+backend-final/**/__pycache__
+backend-final/*.egg-info
+backend-final/.pytest_cache
+backend-final/.tmp_check_user.py
+
+# Documents lourds / hors périmètre du dépôt
+backend-final/knowledge_base/*
+!backend-final/knowledge_base/.gitkeep
+documentation a entrainer/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
