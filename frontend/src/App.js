@@ -14,6 +14,7 @@ import Documents from './pages/Documents';
 import Transparence from './pages/Transparence';
 import Reclamations from './pages/Reclamations';
 import About from './pages/About';
+import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 
 function Layout({ children }) {
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/documents" element={<Layout><Documents /></Layout>} />
           <Route path="/transparence" element={<Layout><Transparence /></Layout>} />
           <Route path="/reclamations" element={<Layout><Reclamations /></Layout>} />
+          <Route path="/admin" element={<Layout><Admin /></Layout>} />
           <Route path="/a-propos" element={<Layout><About /></Layout>} />
           <Route path="/mentions-legales" element={<Layout><About /></Layout>} />
           <Route path="*" element={<Layout><NotFound /></Layout>} />

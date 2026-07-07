@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BarChart3, AlertTriangle, CheckCircle2, User, Lock } from 'lucide-react';
+import { BarChart3, AlertTriangle, CheckCircle2, User, Lock, ShieldCheck } from 'lucide-react';
 
 const armoiriesCameroun = '/assets/armoiries-cameroun.svg';
 
@@ -278,6 +278,11 @@ export default function Navbar() {
           <div className="desktop-auth">
             {user ? (
               <>
+                {user.role === 'admin' && (
+                  <Link to="/admin" className="btn-outline">
+                    <ShieldCheck size={14} /> Admin
+                  </Link>
+                )}
                 <Link to="/dashboard" className="btn-espace">
                   <User size={14} /> {user.full_name?.split(' ')[0] || 'Mon espace'}
                 </Link>
@@ -315,6 +320,11 @@ export default function Navbar() {
           <div className="mobile-menu-auth">
             {user ? (
               <>
+                {user.role === 'admin' && (
+                  <Link to="/admin" className="btn-outline">
+                    <ShieldCheck size={14} /> Admin
+                  </Link>
+                )}
                 <Link to="/dashboard" className="btn-espace">
                   <User size={14} /> {user.full_name?.split(' ')[0] || 'Mon espace'}
                 </Link>

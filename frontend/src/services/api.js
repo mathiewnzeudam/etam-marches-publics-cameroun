@@ -75,4 +75,9 @@ export const reclamationService = {
   get: (id) => API.get(`/reclamations/${id}`),
 };
 
+export const adminService = {
+  reclamations: (params) => API.get('/reclamations/admin/toutes', { params }),
+  updateReclamation: (id, data) => API.patch(`/reclamations/${id}`, data),
+};
+
 export default API;
