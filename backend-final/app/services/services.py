@@ -75,6 +75,27 @@ class UserService:
         await self.db.execute(update(User).where(User.id == user_id).values(last_login=datetime.utcnow()))
         await self.db.commit()
 
+    async def list_all(self, role: str | None = None, search: str | None = None,
+                       limit: int = 50, offset: int = 0) -> list[User]:
+        q = select(User).order_by(User.created_at.desc())
+        if role:
+            q = q.where(User.role == role)
+        if search:
+            like = f"%{search.lower()}%"
+            q = q.where(or_(func.lower(User.email).like(like), func.lower(User.full_name).like(like)))
+        q = q.limit(limit).offset(offset)
+        r = await self.db.execute(q)
+        return list(r.scalars().all())
+
+    async def count_all(self) -> int:
+        r = await self.db.execute(select(func.count()).select_from(User))
+        return r.scalar_one()
+
+    async def set_active(self, user_id: uuid.UUID, is_active: bool) -> Optional[User]:
+        await self.db.execute(update(User).where(User.id == user_id).values(is_active=is_active))
+        await self.db.commit()
+        return await self.get_by_id(user_id)
+
 
 # ════════════════════════════════════════════════════════════════
 #  CONVERSATION SERVICE

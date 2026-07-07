@@ -107,6 +107,44 @@ async def change_password(data: PasswordChange, current_user=Depends(get_current
 
 
 # ════════════════════════════════════════════════════════════════
+#  ADMINISTRATION — comptes utilisateurs
+# ════════════════════════════════════════════════════════════════
+
+admin_users_r = APIRouter(prefix="/admin/users", tags=["Administration"],
+                          dependencies=[Depends(require_role("admin"))])
+
+
+@admin_users_r.get("", response_model=list[UserOut], summary="Lister les utilisateurs")
+async def admin_list_users(
+    role: Optional[str] = Query(None),
+    search: Optional[str] = Query(None, description="Recherche par nom ou email"),
+    limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+):
+    return await UserService(db).list_all(role=role, search=search, limit=limit, offset=offset)
+
+
+@admin_users_r.get("/count", summary="Nombre total de comptes")
+async def admin_count_users(db: AsyncSession = Depends(get_db)):
+    return {"total": await UserService(db).count_all()}
+
+
+@admin_users_r.patch("/{user_id}/active", response_model=UserOut,
+                     summary="Activer / désactiver un compte")
+async def admin_set_user_active(
+    user_id: uuid.UUID, is_active: bool,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if user_id == current_user.id:
+        raise HTTPException(400, "Impossible de désactiver son propre compte")
+    user = await UserService(db).set_active(user_id, is_active)
+    if not user:
+        raise HTTPException(404, "Utilisateur introuvable")
+    return user
+
+
+# ════════════════════════════════════════════════════════════════
 #  CHAT IA
 # ════════════════════════════════════════════════════════════════
 
@@ -685,6 +723,7 @@ PREFIX = "/api/v1"
 
 def include_all(app):
     app.include_router(auth,     prefix=PREFIX)
+    app.include_router(admin_users_r, prefix=PREFIX)
     app.include_router(chat_r,   prefix=PREFIX)
     app.include_router(tenders,  prefix=PREFIX)
     app.include_router(alerts_r, prefix=PREFIX)
