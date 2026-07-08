@@ -360,13 +360,20 @@ async def _sync(task):
 
         log.info(f"Scraping terminé : {len(data)} marchés récupérés")
 
-        new_count = 0
+        new_count, failed_count = 0, 0
         async with async_session_factory() as db:
             svc = TenderService(db)
             for d in data:
-                if await svc.upsert_tender(d):
-                    new_count += 1
+                try:
+                    if await svc.upsert_tender(d):
+                        new_count += 1
+                except Exception as e:
+                    failed_count += 1
+                    if failed_count <= 5:
+                        log.warning(f"Sync ARMP : échec insertion {d.get('external_id')} : {e}")
             await svc.complete_sync_job(job_id, new_count)
+        if failed_count:
+            log.warning(f"Sync ARMP : {failed_count} marché(s) non inséré(s) sur {len(data)}")
 
         log.info(f"Sync ARMP terminée : {new_count} nouveaux / {len(data)} traités")
         return {"new": new_count, "total": len(data)}

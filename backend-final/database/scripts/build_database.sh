@@ -116,6 +116,12 @@ echo -e "${YELLOW}[+] Création de la table réclamations...${NC}"
 docker exec -i $CONTAINER psql -U $DB_USER -d $DB_NAME < database/migrations/005_reclamations.sql
 echo -e "${GREEN}✓ Table réclamations créée${NC}"
 
+# ── Migration 006 — Correctifs de contraintes ─────────────────
+echo ""
+echo -e "${YELLOW}[+] Correctifs de contraintes (rôles, type de procédure)...${NC}"
+docker exec -i $CONTAINER psql -U $DB_USER -d $DB_NAME < database/migrations/006_fix_role_and_procedure_constraints.sql
+echo -e "${GREEN}✓ Contraintes corrigées${NC}"
+
 # ── Rapport final ─────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${GREEN}═══════════════════════════════════════════════${NC}"

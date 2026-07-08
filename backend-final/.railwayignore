@@ -1,0 +1,13 @@
+.venv
+venv
+__pycache__
+**/__pycache__
+.pytest_cache
+knowledge_base
+scripts/debug
+.git
+.env
+.env.*
+!.env.example
+node_modules
+.tmp_check_user.py

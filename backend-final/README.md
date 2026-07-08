@@ -145,6 +145,33 @@ open http://localhost:8080
 
 ---
 
+## Migrations de schéma (Alembic)
+
+Les fichiers `database/migrations/000-006_*.sql` restent l'historique de la création
+initiale du schéma. **Toute évolution future du schéma passe par Alembic**, pas par un
+nouveau fichier SQL manuel — ça évite le type de désynchronisation qu'on a eu entre
+l'environnement local et la production (contrainte appliquée dans un environnement,
+oubliée dans l'autre).
+
+```bash
+# Après avoir modifié app/models/models.py :
+alembic revision --autogenerate -m "description du changement"
+# Relire le fichier généré dans alembic/versions/ avant de l'appliquer (l'autogénération
+# peut proposer des changements non voulus, ex: renommage d'index).
+alembic upgrade head
+
+# Voir l'état d'un environnement :
+alembic current
+
+# Revenir en arrière si besoin :
+alembic downgrade -1
+```
+
+`alembic/env.py` lit `DATABASE_URL` depuis `settings` (donc depuis `.env` ou les
+variables d'environnement Railway) — jamais depuis `alembic.ini`.
+
+---
+
 ## Ports
 | Service | Port | URL |
 |---|---|---|

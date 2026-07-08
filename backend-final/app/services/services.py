@@ -235,21 +235,29 @@ class TenderService:
         return r.scalar_one_or_none()
 
     async def upsert_tender(self, data: dict) -> bool:
-        existing = None
-        if data.get("external_id"):
-            r = await self.db.execute(select(Tender).where(Tender.external_id == data["external_id"]))
-            existing = r.scalar_one_or_none()
-        if existing:
-            for k, v in data.items():
-                if hasattr(existing, k) and v is not None:
-                    setattr(existing, k, v)
-            existing.synced_at = datetime.utcnow()
+        # Toute exception ici doit être suivie d'un rollback avant de retourner la main à
+        # l'appelant : sans ça, la session reste dans un état "transaction avortée" et TOUTES
+        # les lignes suivantes d'un même lot (scraping de centaines de marchés) échouent en
+        # cascade même si elles sont valides — bug observé en production (0/469 insérés).
+        try:
+            existing = None
+            if data.get("external_id"):
+                r = await self.db.execute(select(Tender).where(Tender.external_id == data["external_id"]))
+                existing = r.scalar_one_or_none()
+            if existing:
+                for k, v in data.items():
+                    if hasattr(existing, k) and v is not None:
+                        setattr(existing, k, v)
+                existing.synced_at = datetime.utcnow()
+                await self.db.commit()
+                return False
+            tender = Tender(**{k: v for k, v in data.items() if hasattr(Tender, k)})
+            self.db.add(tender)
             await self.db.commit()
-            return False
-        tender = Tender(**{k: v for k, v in data.items() if hasattr(Tender, k)})
-        self.db.add(tender)
-        await self.db.commit()
-        return True
+            return True
+        except Exception:
+            await self.db.rollback()
+            raise
 
     async def get_recent(self, since: datetime) -> list[Tender]:
         r = await self.db.execute(

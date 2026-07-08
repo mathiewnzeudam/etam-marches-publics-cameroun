@@ -66,16 +66,18 @@ async def _auto_seed():
         async with _httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
             data = await _scrape_pages(client, pages=200)
 
-        inserted = 0
+        inserted, failed = 0, 0
         svc = TenderService(db)
         for t in data:
             try:
                 if await svc.upsert_tender(t):
                     inserted += 1
-            except Exception:
-                pass
+            except Exception as e:
+                failed += 1
+                if failed <= 5:
+                    log.warning(f"Auto-seed : échec insertion {t.get('external_id')} : {e}")
 
-        log.info(f"Auto-seed terminé : {inserted}/{len(data)} marchés insérés ✓")
+        log.info(f"Auto-seed terminé : {inserted}/{len(data)} marchés insérés ✓ ({failed} échecs)")
     except Exception as e:
         log.error(f"Auto-seed échoué : {e}")
     finally:
