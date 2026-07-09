@@ -30,6 +30,13 @@ const DOC_TYPE_COLORS = {
   qualification_file: '#6B4C9A', recourse: '#CE1126', contract_draft: '#2E86AB',
 };
 
+const MONTH_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+/* Convertit "2026-06" en "Juin" — le libellé brut de l'API ne se prête pas à un simple slice(). */
+function monthLabel(ym) {
+  const m = /^\d{4}-(\d{2})$/.exec(String(ym));
+  return m ? MONTH_ABBR[parseInt(m[1], 10) - 1] : String(ym);
+}
+
 /* ── Mini graphique barres SVG ── */
 function MiniBarChart({ data, color = '#1B3A6B', h = 48 }) {
   const ref = useRef();
@@ -53,9 +60,11 @@ function MiniBarChart({ data, color = '#1B3A6B', h = 48 }) {
             <rect x={x} y={h - 10 - bh} width={barW} height={bh} rx={2}
               fill={color} fillOpacity={0.15 + (i / data.length) * 0.7}
               style={{ transition: `height 0.6s ease ${i * 0.04}s, y 0.6s ease ${i * 0.04}s` }}>
-              <title>{d.label}: {d.value}</title>
+              <title>{monthLabel(d.label)}: {d.value}</title>
             </rect>
-            {i % 2 === 0 && <text x={x + barW / 2} y={h - 1} textAnchor="middle" fontSize={7} fill="#aaa">{String(d.label).slice(-3)}</text>}
+            {(data.length <= 4 || i % 2 === 0) && (
+              <text x={x + barW / 2} y={h - 1} textAnchor="middle" fontSize={7} fill="#aaa">{monthLabel(d.label)}</text>
+            )}
           </g>
         );
       })}
@@ -276,6 +285,11 @@ export default function Dashboard() {
                     <MiniDonut pct={awardRate} color="#2E86AB" label="Attribués" />
                   </div>
                 </div>
+                {byMonth.length > 0 && byMonth.length < 3 && (
+                  <p style={{ fontSize: 10.5, color: '#94a3b8', marginTop: 8, marginBottom: 0 }}>
+                    Historique limité à {byMonth.length} mois pour l'instant — s'enrichira au fil des prochaines synchronisations ARMP.
+                  </p>
+                )}
               </div>
             )}
 
