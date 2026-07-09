@@ -143,7 +143,9 @@ class TestAuth:
     async def test_me_sans_token(self):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
             r = await c.get("/api/v1/auth/me")
-        assert r.status_code == 401
+        # FastAPI's HTTPBearer renvoie 403 (pas 401) quand l'en-tête Authorization
+        # est absent — 401 est réservé au cas où un token est fourni mais invalide.
+        assert r.status_code == 403
 
     @pytest.mark.anyio
     async def test_me_token_invalide(self):

@@ -1,0 +1,64 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    defaults:
+      run:
+        working-directory: backend-final
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Déployer sur Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        # Service ID plutôt que nom : le nom réel commence par un tiret
+        # ("-marche-ia-backend"), ambigu à passer en argument CLI.
+        run: railway up --service 29f0c570-56a5-4f10-9cdc-974769729fdb --detach
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installer Vercel CLI
+        run: npm install -g vercel
+
+      - name: Récupérer la config d'environnement Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+
+      - name: Build
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel build --prod --token=$VERCEL_TOKEN
+
+      - name: Déployer
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
