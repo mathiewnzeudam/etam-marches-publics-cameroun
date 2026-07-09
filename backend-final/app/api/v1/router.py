@@ -141,6 +141,8 @@ async def admin_set_user_active(
     user = await UserService(db).set_active(user_id, is_active)
     if not user:
         raise HTTPException(404, "Utilisateur introuvable")
+    await log_action(db, current_user.id, "admin.user.set_active" if is_active else "admin.user.deactivate",
+                     "user", user_id)
     return user
 
 
@@ -715,6 +717,7 @@ async def admin_update_reclamation(
     recl = await ReclamationService(db).update(recl_id, data, actor_role=current_user.role)
     if not recl:
         raise HTTPException(404, "Réclamation introuvable")
+    await log_action(db, current_user.id, "admin.reclamation.update", "reclamation", recl_id)
     return ReclamationOut.model_validate(recl)
 
 

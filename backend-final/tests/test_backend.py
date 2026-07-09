@@ -406,3 +406,80 @@ class TestRAGService:
         key1 = RAGService._cache_key("question", {"source_type": "code_marches"})
         key2 = RAGService._cache_key("question", {"source_type": "guide_coleps"})
         assert key1 != key2           # filtres différents → clés différentes
+
+
+# ════════════════════════════════════════════════════════════════
+#  TESTS RBAC / ADMIN
+# ════════════════════════════════════════════════════════════════
+
+def _make_user(role, user_id="22222222-2222-2222-2222-222222222222"):
+    u = MagicMock()
+    u.id = uuid.UUID(user_id)
+    u.email = f"{role}@marche-ia.cm"
+    u.full_name = f"Utilisateur {role}"
+    u.role = role
+    u.is_active = True
+    return u
+
+
+class TestRegisterRoleValidation:
+    @pytest.mark.anyio
+    async def test_register_refuse_role_admin(self, mocker):
+        # Faille corrigée : "admin" ne doit jamais être auto-attribuable à l'inscription.
+        mocker.patch("app.services.services.UserService.get_by_email", return_value=None)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            r = await c.post("/api/v1/auth/register", json={
+                "email": "hacker@test.cm", "full_name": "Hacker",
+                "password": "Password123!", "role": "admin",
+            })
+        assert r.status_code == 422
+
+    @pytest.mark.anyio
+    async def test_register_accepte_enterprise(self, mocker):
+        mocker.patch("app.services.services.UserService.get_by_email", return_value=None)
+        mocker.patch("app.services.services.UserService.create", return_value=_make_user("enterprise"))
+        mocker.patch("app.api.v1.router.log_action", new=AsyncMock())
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            r = await c.post("/api/v1/auth/register", json={
+                "email": "entreprise@test.cm", "full_name": "Entreprise SARL",
+                "password": "Password123!", "role": "enterprise",
+            })
+        assert r.status_code == 201
+
+
+class TestAdminRBAC:
+    @pytest.mark.anyio
+    async def test_admin_users_refuse_citizen(self, mocker):
+        mocker.patch("app.services.services.UserService.get_by_id", return_value=_make_user("citizen"))
+        token = create_access_token("22222222-2222-2222-2222-222222222222")
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            r = await c.get("/api/v1/admin/users", headers={"Authorization": f"Bearer {token}"})
+        assert r.status_code == 403
+
+    @pytest.mark.anyio
+    async def test_admin_users_autorise_admin(self, mocker):
+        mocker.patch("app.services.services.UserService.get_by_id", return_value=_make_user("admin"))
+        mocker.patch("app.services.services.UserService.list_all", return_value=[])
+        token = create_access_token("22222222-2222-2222-2222-222222222222")
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            r = await c.get("/api/v1/admin/users", headers={"Authorization": f"Bearer {token}"})
+        assert r.status_code == 200
+
+    @pytest.mark.anyio
+    async def test_admin_ne_peut_pas_se_desactiver_lui_meme(self, mocker):
+        admin = _make_user("admin")
+        mocker.patch("app.services.services.UserService.get_by_id", return_value=admin)
+        token = create_access_token(str(admin.id))
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            r = await c.patch(f"/api/v1/admin/users/{admin.id}/active",
+                              params={"is_active": False},
+                              headers={"Authorization": f"Bearer {token}"})
+        assert r.status_code == 400
+
+    @pytest.mark.anyio
+    async def test_reclamations_admin_toutes_refuse_citizen(self, mocker):
+        mocker.patch("app.services.services.UserService.get_by_id", return_value=_make_user("citizen"))
+        token = create_access_token("22222222-2222-2222-2222-222222222222")
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            r = await c.get("/api/v1/reclamations/admin/toutes", headers={"Authorization": f"Bearer {token}"})
+        assert r.status_code == 403
