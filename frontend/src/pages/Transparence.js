@@ -7,6 +7,13 @@ import {
   PieChart as PieChartIcon, Info, ArrowRight, ArrowUpRight,
 } from 'lucide-react';
 
+const MONTH_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+/* Convertit "2026-06" en "Juin" — un slice() sur la chaîne brute donne un résultat illisible. */
+function monthLabel(ym) {
+  const m = /^\d{4}-(\d{2})$/.exec(String(ym));
+  return m ? MONTH_ABBR[parseInt(m[1], 10) - 1] : String(ym);
+}
+
 /* ── Drapeau camerounais ── */
 function CamFlag({ w = 28, h = 19 }) {
   return (
@@ -174,9 +181,9 @@ function LineChart({ data, color = '#1B3A6B' }) {
           <g key={i}>
             <circle cx={p.x} cy={visible ? p.y : pad.t + iH} r={4} fill={color} stroke="#fff" strokeWidth={2}
               style={{ transition: `all 0.5s ease ${i * 0.03}s` }}>
-              <title>{p.label} : {p.val}</title>
+              <title>{monthLabel(p.label)} : {p.val}</title>
             </circle>
-            <text x={p.x} y={H - 6} textAnchor="middle" fontSize={8} fill="#999">{p.label?.slice(-5)}</text>
+            <text x={p.x} y={H - 6} textAnchor="middle" fontSize={8} fill="#999">{monthLabel(p.label)}</text>
           </g>
         ))}
       </svg>
@@ -215,10 +222,10 @@ function StackedBarChart({ data, color = '#1B3A6B' }) {
           const otherH = barH - openH - awardedH;
           return (
             <g key={i}>
-              {otherH > 0 && <rect x={x} y={pad.t + iH - barH} width={barW} height={Math.max(0, otherH)} fill="#94a3b8" rx={2} style={{ transition: `all 0.6s ease ${i * 0.04}s` }}><title>{d.month}: {other} clôturés/autres</title></rect>}
-              {awardedH > 0 && <rect x={x} y={pad.t + iH - openH - awardedH} width={barW} height={Math.max(0, awardedH)} fill="#2E86AB" rx={2} style={{ transition: `all 0.6s ease ${i * 0.04 + 0.1}s` }}><title>{d.month}: {awarded} attribués</title></rect>}
-              {openH > 0 && <rect x={x} y={pad.t + iH - openH} width={barW} height={Math.max(0, openH)} fill="#007A5E" rx={2} style={{ transition: `all 0.6s ease ${i * 0.04 + 0.2}s` }}><title>{d.month}: {open} ouverts</title></rect>}
-              <text x={x + barW / 2} y={H - 6} textAnchor="middle" fontSize={7.5} fill="#999">{String(d.month).slice(-5)}</text>
+              {otherH > 0 && <rect x={x} y={pad.t + iH - barH} width={barW} height={Math.max(0, otherH)} fill="#94a3b8" rx={2} style={{ transition: `all 0.6s ease ${i * 0.04}s` }}><title>{monthLabel(d.month)}: {other} clôturés/autres</title></rect>}
+              {awardedH > 0 && <rect x={x} y={pad.t + iH - openH - awardedH} width={barW} height={Math.max(0, awardedH)} fill="#2E86AB" rx={2} style={{ transition: `all 0.6s ease ${i * 0.04 + 0.1}s` }}><title>{monthLabel(d.month)}: {awarded} attribués</title></rect>}
+              {openH > 0 && <rect x={x} y={pad.t + iH - openH} width={barW} height={Math.max(0, openH)} fill="#007A5E" rx={2} style={{ transition: `all 0.6s ease ${i * 0.04 + 0.2}s` }}><title>{monthLabel(d.month)}: {open} ouverts</title></rect>}
+              <text x={x + barW / 2} y={H - 6} textAnchor="middle" fontSize={7.5} fill="#999">{monthLabel(d.month)}</text>
             </g>
           );
         })}
