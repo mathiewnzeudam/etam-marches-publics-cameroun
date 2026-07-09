@@ -14,9 +14,12 @@ API.interceptors.response.use(
   err => {
     if (err.response?.status === 401 && localStorage.getItem('token')) {
       localStorage.removeItem('token');
-      if (window.location.pathname !== '/connexion') {
-        window.location.href = '/connexion?session_expired=1';
-      }
+      // Ne pas faire de rechargement complet (window.location.href) : ça entrait en
+      // conflit avec la navigation React Router déclenchée en parallèle par les pages
+      // elles-mêmes, causant des comportements erratiques (double redirection, crash
+      // de rendu). On notifie juste AuthContext, qui met à jour l'état proprement ;
+      // les pages protégées redirigent ensuite via leur propre effet React existant.
+      window.dispatchEvent(new Event('auth:expired'));
     }
     return Promise.reject(err);
   }

@@ -19,6 +19,15 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  useEffect(() => {
+    // Déclenché par l'intercepteur axios (api.js) quand un appel renvoie 401 en
+    // cours de session (token expiré) — met à jour l'état React au lieu de forcer
+    // un rechargement complet de page.
+    const onExpired = () => setUser(null);
+    window.addEventListener('auth:expired', onExpired);
+    return () => window.removeEventListener('auth:expired', onExpired);
+  }, []);
+
   const login = async (email, password) => {
     const r = await authService.login({ email, password });
     localStorage.setItem('token', r.data.access_token);
