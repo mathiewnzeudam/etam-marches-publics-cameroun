@@ -42,23 +42,15 @@ jobs:
       - name: Installer Vercel CLI
         run: npm install -g vercel
 
-      - name: Récupérer la config d'environnement Vercel
+      - name: Déployer (build distant sur l'infra Vercel)
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-
-      - name: Build
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: vercel build --prod --token=$VERCEL_TOKEN
-
-      - name: Déployer
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+        # Build distant (pas "vercel build" + "--prebuilt") : un build local dans
+        # le runner CI ne peut pas lire les variables marquées "Sensitive" côté
+        # Vercel, ce qui a déjà cassé un déploiement (REACT_APP_API_BASE_URL vide).
+        run: |
+          url=$(vercel --prod --yes --token=$VERCEL_TOKEN)
+          echo "Déployé sur $url"
+          vercel alias set "$url" frontend-one-wine-72.vercel.app --token=$VERCEL_TOKEN
