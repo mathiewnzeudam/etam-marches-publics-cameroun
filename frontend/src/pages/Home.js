@@ -4,7 +4,7 @@ import { tenderService, dashboardService } from '../services/api';
 import {
   HardHat, Package, Settings, Laptop, Shield, ClipboardList, AlertTriangle,
   Landmark, MapPin, Clock, ArrowRight, CheckCircle2, Trophy, Map, Search,
-  Bot, BarChart3, Coins, Upload, Inbox, Scale, FileText, Lock, Zap, BookOpen,
+  Bot, BarChart3, Coins, Upload, Inbox, Scale, FileText, BookOpen,
 } from 'lucide-react';
 import heroBgImage from '../assets/hero-bg.jpg';
 
@@ -223,12 +223,9 @@ export default function Home() {
           .cards-grid { grid-template-columns: 1fr !important; }
           .steps-grid { grid-template-columns: 1fr !important; }
           .stats-band { grid-template-columns: repeat(2, 1fr) !important; }
-          .badges-bar { justify-content: flex-start !important; }
-          .badge-item { padding: 14px 16px !important; flex: 1 1 45% !important; border-right: none !important; }
         }
         @media (max-width: 420px) {
           .stats-band { grid-template-columns: 1fr !important; }
-          .badge-item { flex: 1 1 100% !important; }
         }
       `}</style>
 
@@ -427,25 +424,6 @@ export default function Home() {
         />
       </div>
 
-      {/* ══ LABELS / PARTENAIRES ══ */}
-      <div style={s.badgesBar} className="badges-bar">
-        {[
-          { icon: Landmark, label: 'ARMP Cameroun',     sub: 'Données officielles' },
-          { icon: Lock, label: 'Données sécurisées', sub: 'Chiffrement SSL' },
-          { icon: Zap, label: 'Temps réel',          sub: 'Sync toutes les heures' },
-          { icon: Bot, label: 'IA intégrée',         sub: 'Powered by Claude AI' },
-          { icon: '🇨🇲', label: 'Made in Cameroun',   sub: 'Plateforme nationale' },
-        ].map(b => (
-          <div key={b.label} style={s.badgeItem} className="badge-item">
-            <span style={{ fontSize: 22, display: 'flex', alignItems: 'center' }}>{typeof b.icon === 'string' ? b.icon : <b.icon size={20} />}</span>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#1B3A6B' }}>{b.label}</div>
-              <div style={{ fontSize: 10, color: '#888' }}>{b.sub}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
     </div>
   );
 }
@@ -610,8 +588,4 @@ const s = {
   actionBanner: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 0, background: '#fff', borderTop: '1px solid #e8eef8', marginBottom: 0 },
   actionCard: { background: '#fff', padding: '32px 28px', display: 'flex', flexDirection: 'column', borderRight: '1px solid #f0f4ff' },
   actionBtn: { color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' },
-
-  /* Badges */
-  badgesBar: { background: '#f8faff', borderTop: '1px solid #e8eef8', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 0 },
-  badgeItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '18px 28px', borderRight: '1px solid #eef1f8' },
 };
