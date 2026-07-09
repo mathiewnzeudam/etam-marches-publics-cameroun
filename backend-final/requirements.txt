@@ -38,10 +38,10 @@ feedparser==6.0.11
 # Validation / Configuration
 pydantic==2.7.4
 pydantic-settings==2.3.4
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 
 # Génération documents
-pypdf==4.2.0
+pypdf==6.6.0
 python-docx==1.1.2
 
 # Tâches asynchrones (Celery)
@@ -49,7 +49,7 @@ celery==5.4.0
 
 # Monitoring
 langfuse==2.32.0
-sentry-sdk[fastapi]==2.7.1
+sentry-sdk[fastapi]==2.64.0
 
 # Tests
 pytest==8.2.2
