@@ -28,7 +28,7 @@ const STATUS_MAP = {
 
 /* ════════════════ PAGE DOCUMENTS ════════════════ */
 export default function Documents() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [view, setView] = useState('list');      // 'list' | 'generate' | 'detail'
@@ -39,6 +39,7 @@ export default function Documents() {
   const [prefill, setPrefill] = useState(null);
 
   useEffect(() => {
+    if (authLoading) return; // attendre la vérification du token avant de décider
     if (!user) { navigate('/connexion'); return; }
     /* Pré-remplissage depuis TenderDetail */
     if (location.state?.prefill) {
@@ -50,7 +51,7 @@ export default function Documents() {
     }
     loadDocs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, authLoading]);
 
   const loadDocs = () => {
     setLoading(true);
@@ -70,7 +71,7 @@ export default function Documents() {
     try { await documentService.remove(id); setDocs(p => p.filter(d => d.id !== id)); } catch {}
   };
 
-  if (!user) return null;
+  if (authLoading || !user) return null;
 
   return (
     <div style={s.page} className="doc-page">

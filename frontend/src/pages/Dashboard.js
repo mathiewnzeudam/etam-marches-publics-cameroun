@@ -84,7 +84,7 @@ function MiniDonut({ pct, color, size = 56, label }) {
 
 /* ════════════════ COMPOSANT PRINCIPAL ════════════════ */
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [active, setActive] = useState('overview');
@@ -97,12 +97,13 @@ export default function Dashboard() {
   const [loadingDocs, setLoadingDocs] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return; // attendre la vérification du token avant de décider
     if (!user) { navigate('/connexion', { state: { from: '/dashboard' } }); return; }
     dashboardService.full().then(r => setStats(r.data)).catch(() => {});
     /* pré-charger les documents dès l'ouverture du dashboard */
     setLoadingDocs(true);
     documentService.list().then(r => setDocuments(r.data || [])).catch(() => {}).finally(() => setLoadingDocs(false));
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   /* Message de bienvenue depuis inscription */
   const welcomeMsg = location.state?.message;
@@ -119,7 +120,7 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  if (!user) return null;
+  if (authLoading || !user) return null;
 
   const initials = (user.full_name || user.email).split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
   const firstName = user.full_name?.split(' ')[0] || 'vous';
