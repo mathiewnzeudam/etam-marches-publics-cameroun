@@ -1,0 +1,18 @@
+name: Sync ARMP
+
+on:
+  schedule:
+    # Toutes les heures — pas de worker Celery dédié en production (limite
+    # de ressources du plan Railway), ce cron le remplace.
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  trigger-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Déclencher la synchronisation ARMP
+        run: |
+          curl -sf -X POST "https://marche-ia-backend-production.up.railway.app/api/v1/internal/sync-armp" \
+            -H "X-Sync-Secret: ${{ secrets.SYNC_TRIGGER_SECRET }}" \
+            -w "\nHTTP %{http_code}\n"

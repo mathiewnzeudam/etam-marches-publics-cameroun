@@ -721,6 +721,30 @@ async def admin_update_reclamation(
     return ReclamationOut.model_validate(recl)
 
 
+# ════════════════════════════════════════════════════════════════
+#  SYNCHRONISATION ARMP — déclenchement externe (cron)
+# ════════════════════════════════════════════════════════════════
+# Pas de worker Celery dédié en production (limite de ressources du plan
+# d'hébergement) : cette route est appelée périodiquement par un job planifié
+# (GitHub Actions) à la place, protégée par un secret partagé plutôt qu'un
+# compte utilisateur — pas de session à maintenir pour un simple cron externe.
+
+internal_r = APIRouter(prefix="/internal", tags=["Interne"])
+
+
+@internal_r.post("/sync-armp", status_code=202,
+                  summary="Déclenche une synchronisation ARMP en tâche de fond (protégé par secret)")
+async def trigger_sync_armp(request: Request, background_tasks: BackgroundTasks):
+    if not settings.SYNC_TRIGGER_SECRET or request.headers.get("X-Sync-Secret") != settings.SYNC_TRIGGER_SECRET:
+        raise HTTPException(403, "Secret de synchronisation invalide ou non configuré")
+    from app.workers.sync_worker import _sync
+    # Exécuté après la réponse HTTP : le scraping ARMP (50 pages, ~10-20 min vu la
+    # lenteur du site source) dépasserait largement le délai d'un proxy HTTP/d'un
+    # step de CI s'il était attendu de façon synchrone.
+    background_tasks.add_task(_sync)
+    return {"status": "accepted", "detail": "Synchronisation lancée en arrière-plan"}
+
+
 # ── Enregistrement de tous les routers ───────────────────────────────────────
 PREFIX = "/api/v1"
 
@@ -732,4 +756,5 @@ def include_all(app):
     app.include_router(alerts_r, prefix=PREFIX)
     app.include_router(docs_r,   prefix=PREFIX)
     app.include_router(dash_r,   prefix=PREFIX)
+    app.include_router(internal_r, prefix=PREFIX)
     app.include_router(recl_r,   prefix=PREFIX)

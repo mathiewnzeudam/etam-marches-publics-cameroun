@@ -345,7 +345,7 @@ async def _scrape_pages(client: httpx.AsyncClient, pages: int = SYNC_PAGES) -> l
     return results
 
 
-async def _sync(task):
+async def _sync(task=None):
     from app.db.session import async_session_factory
     from app.services.services import TenderService
 
@@ -383,7 +383,9 @@ async def _sync(task):
         if job_id:
             async with async_session_factory() as db:
                 await TenderService(db).fail_sync_job(job_id, str(exc))
-        raise task.retry(exc=exc)
+        if task is not None:
+            raise task.retry(exc=exc)
+        raise
 
 
 # ════════════════════════════════════════════════════════════════

@@ -78,6 +78,9 @@ class Settings(BaseSettings):
     # Synchronisation ARMP
     ARMP_FEED_URL: str = "https://armp.cm/rss"
     SYNC_INTERVAL_MINUTES: int = 60
+    # Secret partagé pour déclencher la sync via /internal/sync-armp (cron GitHub
+    # Actions) en l'absence de worker Celery dédié en production.
+    SYNC_TRIGGER_SECRET: str = ""
 
     # Monitoring
     LANGFUSE_PUBLIC_KEY: str = ""
